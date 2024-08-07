@@ -1,0 +1,604 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+import re
+import requests
+import random
+
+# Dictionary to store accounts
+accounts = {"": ""}
+
+# Dictionary to store character information
+characters = {
+    "Batman": {"Superpower": "Stealth in the Shadows", "Image": "C:/Users/MalakAlamir/Downloads/batman.jpg",
+               "Abilities": ["Gadget Mastery", "Martial Arts"]},
+    "Wolverine": {"Superpower": "Claws", "Image": "C:/Users/MalakAlamir/Downloads/wolverine.jpg",
+                  "Abilities": ["Regeneration", "Enhanced Senses"]},
+    "Loki": {"Superpower": "Manipulation of Time", "Image": "C:/Users/MalakAlamir/Downloads/loki.jpg",
+             "Abilities": ["Illusions", "Shape-shifting"]},
+    "Flash": {"Superpower": "Super Speed", "Image": "C:/Users/MalakAlamir/Downloads/flash.jpg",
+              "Abilities": ["Time Travel", "Vortex Creation"]},
+    "Superman": {"Superpower": "Flight", "Image": "C:/Users/MalakAlamir/Downloads/superman.jpg",
+                 "Abilities": ["Super Strength", "Heat Vision"]},
+    "Wonder Woman": {"Superpower": "Lasso of Truth", "Image": "C:/Users/MalakAlamir/Downloads/wonderwoman.jpg",
+                     "Abilities": ["Divine Wisdom", "Combat Skills"]},
+    "Iron Man": {"Superpower": "Powered Armor", "Image": "C:/Users/MalakAlamir/Downloads/iron man.jpg",
+                 "Abilities": ["Genius-level Intellect", "Flight"]},
+    "Captain America": {"Superpower": "Superhuman Strength",
+                        "Image": "C:/Users/MalakAlamir/Downloads/captain america.jpg",
+                        "Abilities": ["Enhanced Reflexes", "Shield Mastery"]},
+    "Spiderman": {"Superpower": "Wall-crawling", "Image": "C:/Users/MalakAlamir/Downloads/spiderman.jpg",
+                  "Abilities": ["Spider-Sense", "Web-shooting"]},
+    "Doctor Strange": {"Superpower": "Mystic Arts", "Image": "C:/Users/MalakAlamir/Downloads/dr strange.jpg",
+                       "Abilities": ["Magic Spells", "Dimensional Travel"]}
+}
+
+
+# Function to create account
+def create_account():
+    def save_account():
+        new_username = username_entry.get()
+        new_password = password_entry.get()
+        confirm_password = confirm_password_entry.get()
+
+        if new_username and new_password and new_password == confirm_password:
+            accounts[new_username] = new_password  # Save account
+            messagebox.showinfo("Account Created", "Your account has been successfully created!")
+            create_account_window.destroy()
+        else:
+            messagebox.showerror("Error",
+                                 "Username or Password fields are empty, or passwords do not match.")
+
+    create_account_window = tk.Toplevel(root)
+    create_account_window.title("Create Account")
+
+    username_label = tk.Label(create_account_window, text="Username:")
+    username_label.grid(row=0, column=0, padx=10, pady=5)
+    username_entry = tk.Entry(create_account_window)
+    username_entry.grid(row=0, column=1, padx=10, pady=5)
+
+    password_label = tk.Label(create_account_window, text="Password:")
+    password_label.grid(row=1, column=0, padx=10, pady=5)
+    password_entry = tk.Entry(create_account_window, show="*")
+    password_entry.grid(row=1, column=1, padx=10, pady=5)
+
+    confirm_password_label = tk.Label(create_account_window, text="Confirm Password:")
+    confirm_password_label.grid(row=2, column=0, padx=10, pady=5)
+    confirm_password_entry = tk.Entry(create_account_window, show="*")
+    confirm_password_entry.grid(row=2, column=1, padx=10, pady=5)
+
+    create_button = tk.Button(create_account_window, text="Create", command=save_account)
+    create_button.grid(row=3, columnspan=2, padx=10, pady=10)
+    create_button.configure(bg="#16A085", fg="#FFFFFF", font=("Helvetica", 14))  # Set button style
+
+
+# Function to login
+def login():
+    def verify_login():
+        username = username_entry.get()
+        password = password_entry.get()
+
+        # Check if username or password fields are empty
+        if username.strip() == "" or password.strip() == "":
+            messagebox.showerror("Login Failed", "Username and Password fields cannot be empty.")
+            return
+
+        if accounts.get(username) == password:
+            messagebox.showinfo("Login Successful", f"Welcome, {username}!")
+            level1_button.config(state="normal")
+            login_window.destroy()
+        else:
+            messagebox.showerror("Login Failed", "Invalid username or password. Please try again.")
+
+    login_window = tk.Toplevel(root)
+    login_window.title("Login")
+
+    username_label = tk.Label(login_window, text="Username:")
+    username_label.grid(row=0, column=0, padx=10, pady=5)
+    username_entry = tk.Entry(login_window)
+    username_entry.grid(row=0, column=1, padx=10, pady=5)
+
+    password_label = tk.Label(login_window, text="Password:")
+    password_label.grid(row=1, column=0, padx=10, pady=5)
+    password_entry = tk.Entry(login_window, show="*")
+    password_entry.grid(row=1, column=1, padx=10, pady=5)
+
+    login_button = tk.Button(login_window, text="Login", command=verify_login)
+    login_button.grid(row=2, columnspan=2, padx=10, pady=10)
+    login_button.configure(bg="#16A085", fg="#FFFFFF", font=("Helvetica", 14))  # Set button style
+
+
+# Function to open character selection window
+def choose_character():
+    character_dialog = tk.Toplevel(root)
+    character_dialog.title("Choose Character")
+
+    def select_character(event):
+        item = character_tree.selection()[0]
+        character = character_tree.item(item, "text")
+        superpower = characters[character]["Superpower"]
+        show_character_info(character, superpower)
+
+    character_tree = ttk.Treeview(character_dialog, columns=("Superpower"), style="Custom.Treeview")
+    character_tree.heading("#0", text="Character")
+    character_tree.heading("Superpower", text="Superpower")
+    for character, info in characters.items():
+        character_tree.insert("", "end", text=character, values=(info["Superpower"]))
+    character_tree.bind("<Double-1>", select_character)
+    character_tree.pack(padx=10, pady=10)
+
+    character_tree.tag_configure("oddrow", background="#2C3E50")
+    character_tree.tag_configure("evenrow", background="#34495E")
+
+    # Add the new button
+    chapter1_button = tk.Button(character_dialog, text="Chapter 1: Crime in the Sky", font=("Helvetica", 14),
+                                padx=10, pady=5)
+    chapter1_button.pack(pady=10)
+    chapter1_button.configure(bg="#16A085", fg="#FFFFFF", font=("Helvetica", 14))  # Set button style
+    chapter1_button.bind("<Button-1>", display_help_panel)
+
+
+def display_help_panel(event):
+    help_panel = tk.Toplevel()
+    help_panel.title("Help Panel")
+    help_panel.configure(bg="#2C3E50")
+
+    # Load and display random girl image
+    random_girl_image = Image.open("C:/Users/MalakAlamir/Downloads/maryjane.jpg")
+    random_girl_image = random_girl_image.resize((200, 200))  # Adjust size as needed
+    random_girl_image = ImageTk.PhotoImage(random_girl_image)
+
+    random_girl_label = tk.Label(help_panel, image=random_girl_image, bg="#2C3E50")
+    random_girl_label.image = random_girl_image
+    random_girl_label.pack(side=tk.LEFT, padx=20)
+    random_girl_label.bind("<Button-1>", display_random_man_message)
+
+    # Display help message next to the girl
+    help_message_label = tk.Label(help_panel, text="Help!", font=("Helvetica", 16), fg="#FFFFFF", bg="#2C3E50")
+    help_message_label.pack(side=tk.LEFT)
+
+
+def display_random_man_message(event):
+    random_man_message_window = tk.Toplevel()
+    random_man_message_window.title("Random Man Message")
+
+    # Load and display random man image
+    random_man_image = Image.open("C:/Users/MalakAlamir/Downloads/random man.jpg")
+    random_man_image = random_man_image.resize((200, 200))  # Adjust size as needed
+    random_man_image = ImageTk.PhotoImage(random_man_image)
+
+    random_man_label = tk.Label(random_man_message_window, image=random_man_image, bg="#2C3E50")
+    random_man_label.image = random_man_image
+    random_man_label.pack(pady=20)
+    random_man_label.bind("<Button-1>", display_random_girl_message)
+
+    # Display message
+    random_man_message = tk.Label(random_man_message_window,
+                                  text="Someone destroyed the balcony that the girl was standing on",
+                                  font=("Helvetica", 14), fg="#FFFFFF", bg="#2C3E50")
+    random_man_message.pack()
+
+
+def display_random_girl_message(event):
+    random_girl_message_window = tk.Toplevel()
+    random_girl_message_window.title("Random Girl Message")
+    random_girl_message_window.configure(bg="purple")
+
+    # Load and display random girl image
+    random_girl_image = Image.open("C:/Users/MalakAlamir/Downloads/random girl 1.jpg")
+    random_girl_image = random_girl_image.resize((200, 200))  # Adjust size as needed
+    random_girl_image = ImageTk.PhotoImage(random_girl_image)
+
+    random_girl_label = tk.Label(random_girl_message_window, image=random_girl_image, bg="purple")
+    random_girl_label.image = random_girl_image
+    random_girl_label.pack(pady=20)
+    random_girl_label.bind("<Button-1>", display_random_girl2_message)
+
+    # Display message
+    random_girl_message = tk.Label(random_girl_message_window,
+                                   text="Do you know that this girl used to go to school with me?",
+                                   font=("Helvetica", 14), fg="#FFFFFF", bg="purple")
+    random_girl_message.pack()
+
+
+def display_random_girl2_message(event):
+    random_girl2_message_window = tk.Toplevel()
+    random_girl2_message_window.title("Random Girl 2 Message")
+    random_girl2_message_window.configure(bg="black")
+
+    # Load and display random girl 2 image
+    random_girl2_image = Image.open("C:/Users/MalakAlamir/Downloads/random girl2.jpg")
+    random_girl2_image = random_girl2_image.resize((200, 200))  # Adjust size as needed
+    random_girl2_image = ImageTk.PhotoImage(random_girl2_image)
+
+    random_girl2_label = tk.Label(random_girl2_message_window, image=random_girl2_image, bg="black")
+    random_girl2_label.image = random_girl2_image
+    random_girl2_label.pack(pady=20)
+
+    # Display message
+    random_girl2_message = tk.Label(random_girl2_message_window, text="I heard that her name is Mary Jane",
+                                    font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+    random_girl2_message.pack()
+
+    # After 5 seconds, create the "We need a superhero!" message panel
+    random_girl2_message_window.after(5000, create_superhero_message_panel)
+
+
+# Function to create the "We need a superhero!" message panel
+def create_superhero_message_panel():
+    superhero_message_panel = tk.Toplevel(root)
+    superhero_message_panel.title("We need a superhero!")
+    superhero_message_panel.geometry("400x200")
+    superhero_message_panel.configure(bg="black")
+
+    message_label = tk.Label(superhero_message_panel, text="We need a superhero!", font=("Helvetica", 24, "bold"),
+                             fg="red", bg="black")
+    message_label.pack(expand=True)
+    # Add new button to select suitable hero
+    choose_hero_button = tk.Button(superhero_message_panel, text="Who is the suitable hero for this mission?",
+                                   font=("Helvetica", 14), padx=10, pady=5, bg="#16A085",
+                                   fg="#FFFFFF", command=display_hero_choices)
+    choose_hero_button.pack(pady=10)
+
+
+# Function to display hero choices
+def display_hero_choices():
+    hero_choice_panel = tk.Toplevel(root)
+    hero_choice_panel.title("Choose Suitable Hero")
+    hero_choice_panel.geometry("800x400")
+    hero_choice_panel.configure(bg="black")
+
+    # Add Wallpaper
+    wallpaper_image = Image.open("C:/Users/MalakAlamir/Downloads/panel wallpaper.jpg")
+    wallpaper_image = wallpaper_image.resize((800, 400))  # Adjust size as needed
+    wallpaper_image = ImageTk.PhotoImage(wallpaper_image)
+    wallpaper_label = tk.Label(hero_choice_panel, image=wallpaper_image, bg="black")
+    wallpaper_label.image = wallpaper_image
+    wallpaper_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+    suitable_hero_label = tk.Label(hero_choice_panel, text="Who is the suitable hero for this mission?",
+                                   font=("Helvetica", 16), fg="red", bg="black")
+    suitable_hero_label.place(relx=0.5, rely=0.1, anchor="center")
+
+    # Add columns of hero choices
+    num_columns = 3
+    for column in range(num_columns):
+        column_frame = tk.Frame(hero_choice_panel, bg="black")
+        column_frame.place(relx=(0.33 * column) + 0.05, rely=0.3, anchor="nw")
+        for idx, hero in enumerate(characters.keys()):
+            if idx % num_columns == column:
+                hero_button = tk.Button(column_frame, text=hero, font=("Helvetica", 14), padx=10, pady=5,
+                                        bg="#16A085", fg="#FFFFFF", command=lambda h=hero: select_hero(h))
+                hero_button.pack(pady=5)
+
+
+# Function to select hero
+def select_hero(hero):
+    messagebox.showinfo("Hero Selected", f"You have selected {hero} for this mission!")
+    # You can add further actions here if needed
+
+
+# Function to show character information
+def show_character_info(character, superpower):
+    character_info_window = tk.Toplevel(root)
+    character_info_window.title("Character Info")
+
+    character_label = tk.Label(character_info_window, text=character, font=("Helvetica", 18))
+    character_label.pack(pady=10)
+
+    superpower_label = tk.Label(character_info_window, text=f"Superpower: {superpower}")
+    superpower_label.pack(pady=5)
+
+    abilities_label = tk.Label(character_info_window, text="Abilities:")
+    abilities_label.pack(pady=5)
+
+    # Check if character exists in characters dictionary
+    if character in characters:
+        # Load and display character image
+
+        image_path = characters[character]["Image"]
+        pil_image = Image.open(image_path)
+        pil_image = pil_image.resize((200, 200))  # Adjust size as needed
+        pil_image = ImageTk.PhotoImage(pil_image)
+
+        character_image = pil_image
+        character_image_label = tk.Label(character_info_window, image=character_image)
+        character_image_label.image = character_image  # Keep reference to the image
+        print("Image Path:", image_path)  # Print image path for debugging
+        character_image_label.pack(pady=10)
+
+        # Display character abilities
+        for ability in characters[character]["Abilities"]:
+            ability_label = tk.Label(character_info_window, text=f"- {ability}")
+            ability_label.pack()
+    else:
+        print("Character not found:", character)  # Print error message if character not found
+
+
+# Function to display help message
+def display_help_message():
+    messagebox.showinfo("Help",
+                        "This is a mini game that is visualising our superheroes with a little story and the surprise at the end is when you finish this simple game.wink wink")
+
+
+# Main window
+root = tk.Tk()
+root.title("Escape Game")
+
+# Set up style
+style = ttk.Style()
+style.theme_use("clam")
+style.configure("Custom.Treeview", background="#34495E", fieldbackground="#34495E", foreground="#FFFFFF",
+                font=("Helvetica", 12))
+style.map("Custom.Treeview", background=[("selected", "#16A085")])
+
+# Set up screen dimensions and background color
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+root.configure(bg="#2C3E50")
+
+# Create game screen frame
+game_screen = tk.Frame(root, bg="#2C3E50")
+game_screen.pack(padx=10, pady=10)
+
+# Add labels and buttons to the game screen
+label_info = tk.Label(game_screen, text="Welcome to the Escape Game!", font=("Helvetica", 18), fg="#FFFFFF",
+                      bg="#2C3E50")
+label_info.pack(pady=20)
+
+button_help = tk.Button(game_screen, text="Help", font=("Helvetica", 14), padx=10, pady=5, bg="#16A085",
+                        fg="#FFFFFF", command=display_help_message)
+button_help.pack(side=tk.LEFT, padx=5)
+
+button_exit = tk.Button(game_screen, text="Exit", font=("Helvetica", 14), padx=10, pady=5, bg="#16A085",
+                        fg="#FFFFFF", command=root.destroy)
+button_exit.pack(side=tk.LEFT, padx=5)
+
+button_login = tk.Button(game_screen, text="Login", font=("Helvetica", 14), padx=10, pady=5, bg="#16A085",
+                         fg="#FFFFFF", command=login)
+button_login.pack(side=tk.LEFT, padx=5)
+
+level1_button = tk.Button(game_screen, text="Start", font=("Helvetica", 14), padx=10, pady=5, bg="#16A085",
+                          fg="#FFFFFF", state="disabled", command=choose_character)
+level1_button.pack(side=tk.LEFT, padx=5)
+
+# Account Creation Frame
+account_frame = tk.Frame(game_screen, bg="#2C3E50")
+account_frame.pack()
+
+create_account_button = tk.Button(account_frame, text="Create Account", font=("Helvetica", 14), padx=10, pady=5,
+                                  command=create_account)
+create_account_button.pack(side=tk.LEFT, padx=5)
+create_account_button.configure(bg="#16A085", fg="#FFFFFF", font=("Helvetica", 14))  # Set button style
+
+
+# Function to select hero
+def select_hero(hero):
+    if hero == "Batman":
+        batman_window = tk.Toplevel(root)
+        batman_window.title("Batman")
+
+        batman_image = Image.open("C:/Users/MalakAlamir/Downloads/batman2.jpg")
+        batman_image = batman_image.resize((200, 200))
+        batman_image = ImageTk.PhotoImage(batman_image)
+
+        batman_label = tk.Label(batman_window, image=batman_image)
+        batman_label.image = batman_image
+        batman_label.pack(pady=20)
+
+        batman_message = tk.Label(batman_window, text="Who is Mary Jane! The city needs me.",
+                                  font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        batman_message.pack()
+    elif hero == "Wolverine":
+        wolverine_window = tk.Toplevel(root)
+        wolverine_window.title("Wolverine")
+
+        wolverine_image = Image.open("C:/Users/MalakAlamir/Downloads/wolverine 2.jpg")
+        wolverine_image = wolverine_image.resize((200, 200))
+        wolverine_image = ImageTk.PhotoImage(wolverine_image)
+
+        wolverine_label = tk.Label(wolverine_window, image=wolverine_image)
+        wolverine_label.image = wolverine_image
+        wolverine_label.pack(pady=20)
+
+        wolverine_message = tk.Label(wolverine_window,
+                                     text="I'm the best there is at what I do, but what I do best isn't very nice. Sorry kiddo, I can't help you.",
+                                     font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        wolverine_message.pack()
+    elif hero == "Flash":
+        flash_window = tk.Toplevel(root)
+        flash_window.title("Flash")
+
+        flash_image = Image.open("C:/Users/MalakAlamir/Downloads/flash2.jpg")
+        flash_image = flash_image.resize((200, 200))
+        flash_image = ImageTk.PhotoImage(flash_image)
+
+        flash_label = tk.Label(flash_window, image=flash_image)
+        flash_label.image = flash_image
+        flash_label.pack(pady=20)
+
+        flash_message = tk.Label(flash_window,
+                                 text="My name is Barry Allen, and I'm the fastest man alive. But not fast enough to figure what is this universe.",
+                                 font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        flash_message.pack()
+    # Add similar elif statements for other heroes
+    elif hero == "Loki":
+        loki_window = tk.Toplevel(root)
+        loki_window.title("Loki")
+
+        loki_image = Image.open("C:/Users/MalakAlamir/Downloads/loki2.jpg")
+        loki_image = loki_image.resize((200, 200))
+        loki_image = ImageTk.PhotoImage(loki_image)
+
+        loki_label = tk.Label(loki_window, image=loki_image)
+        loki_label.image = loki_image
+        loki_label.pack(pady=20)
+
+        loki_message = tk.Label(loki_window,
+                                text="I am burdened with glorious purpose. I won't put myself in saving trash I don't know.",
+                                font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        loki_message.pack()
+    elif hero == "Superman":
+        superman_window = tk.Toplevel(root)
+        superman_window.title("Superman")
+
+        superman_image = Image.open("C:/Users/MalakAlamir/Downloads/superman2.jpg")
+        superman_image = superman_image.resize((200, 200))
+        superman_image = ImageTk.PhotoImage(superman_image)
+
+        superman_label = tk.Label(superman_window, image=superman_image)
+        superman_label.image = superman_image
+        superman_label.pack(pady=20)
+
+        superman_message = tk.Label(superman_window,
+                                    text="Look, up in the sky! It's a bird! It's a plane! It's Superman! Not my mission saving Mary Jane.",
+                                    font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        superman_message.pack()
+    elif hero == "Wonder Woman":
+        wonderwoman_window = tk.Toplevel(root)
+        wonderwoman_window.title("Wonder Woman")
+        wonderwoman_image = Image.open("C:/Users/MalakAlamir/Downloads/ww3.jpg")
+        wonderwoman_image = wonderwoman_image.resize((200, 200))
+        wonderwoman_image = ImageTk.PhotoImage(wonderwoman_image)
+
+        wonderwoman_label = tk.Label(wonderwoman_window, image=wonderwoman_image)
+        wonderwoman_label.image = wonderwoman_image
+        wonderwoman_label.pack(pady=20)
+
+        wonderwoman_message = tk.Label(wonderwoman_window,
+                                       text="I am Diana of Themyscira, daughter of Hippolyta, and in the name of all that is good, your wrath upon this world is over. But sorry, you aren't my villain.",
+                                       font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        wonderwoman_message.pack()
+    elif hero == "Iron Man":
+        ironman_window = tk.Toplevel(root)
+        ironman_window.title("Iron Man")
+
+        ironman_image = Image.open("C:/Users/MalakAlamir/Downloads/iron man2.jpg")
+        ironman_image = ironman_image.resize((200, 200))
+        ironman_image = ImageTk.PhotoImage(ironman_image)
+
+        ironman_label = tk.Label(ironman_window, image=ironman_image)
+        ironman_label.image = ironman_image
+        ironman_label.pack(pady=20)
+
+        ironman_message = tk.Label(ironman_window,
+                                   text="If you're nothing without this suit, then you shouldn't have it. I'm the wrong hero for this mission.",
+                                   font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        ironman_message.pack()
+    elif hero == "Doctor Strange":
+        drstrange_window = tk.Toplevel(root)
+        drstrange_window.title("Doctor Strange")
+
+        drstrange_image = Image.open("C:/Users/MalakAlamir/Downloads/dr strange2.jpg")
+        drstrange_image = drstrange_image.resize((200, 200))
+        drstrange_image = ImageTk.PhotoImage(drstrange_image)
+
+        drstrange_label = tk.Label(drstrange_window, image=drstrange_image)
+        drstrange_label.image = drstrange_image
+        drstrange_label.pack(pady=20)
+
+        drstrange_message = tk.Label(drstrange_window,
+                                     text="Mr. Stark, it feels like... I'm meant for something more than this.",
+                                     font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        drstrange_message.pack()
+    elif hero == "Captain America":
+        captainamerica_window = tk.Toplevel(root)
+        captainamerica_window.title("Captain America")
+
+        captainamerica_image = Image.open("C:/Users/MalakAlamir/Downloads/captain america2.jpg")
+        captainamerica_image = captainamerica_image.resize((200, 200))
+        captainamerica_image = ImageTk.PhotoImage(captainamerica_image)
+
+        captainamerica_label = tk.Label(captainamerica_window, image=captainamerica_image)
+        captainamerica_label.image = captainamerica_image
+        captainamerica_label.pack(pady=20)
+
+        captainamerica_message = tk.Label(captainamerica_window,
+                                          text="I can do this all day. But not today, MJ is not part of this mission.",
+                                          font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        captainamerica_message.pack()
+    elif hero == "Spiderman":
+        spiderman_window = tk.Toplevel(root)
+        spiderman_window.title("Spiderman")
+
+        spiderman_image = Image.open("C:/Users/MalakAlamir/Downloads/spider peter dimension 2.jpg")
+        spiderman_image = spiderman_image.resize((200, 200))
+        spiderman_image = ImageTk.PhotoImage(spiderman_image)
+
+        spiderman_label = tk.Label(spiderman_window, image=spiderman_image)
+        spiderman_label.image = spiderman_image
+        spiderman_label.pack(pady=20)
+
+        spiderman_message = tk.Label(spiderman_window,
+                                     text="With great power comes great responsibility. I'll save you, MJ!",
+                                     font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+        spiderman_message.pack()
+
+        def open_first_try_gui():
+            
+            def is_phishing(url):
+                if not url.startswith('http://') and not url.startswith('https://'):
+                    url = 'http://' + url
+
+                try:
+                    response = requests.get(url)
+                    webpage_content = response.text
+                except:
+                    return True
+
+                phishing_keywords = ['login', 'signin', 'verify', 'account', 'update', 'secure', 'bank', 'paypal']
+                for keyword in phishing_keywords:
+                    if keyword in url:
+                        return True
+
+                malicious_patterns = ['<script>prompt("This is a phishing site!","")</script>',
+                                      'alert("Phishing Detected!")']
+                for pattern in malicious_patterns:
+                    if pattern in webpage_content:
+                        return True
+
+                return False
+
+            def check_phishing():
+                url = entry_url.get()
+                if is_phishing(url):
+                    messagebox.showwarning("Warning", "Potential phishing website detected!")
+                else:
+                    messagebox.showinfo("Safe", "Website appears to be safe.")
+
+            root2 = tk.Tk()
+            root2.title("Phishing Website Checker")
+
+            label_url = tk.Label(root2, text="Enter the URL to check for phishing:")
+            label_url.pack()
+            entry_url = tk.Entry(root2, width=50)
+            entry_url.pack()
+
+
+            button_check = tk.Button(root2, text="Check", command=check_phishing)
+            button_check.pack()
+
+            root2.mainloop()
+
+        def show_congratulations_window():
+            congratulations_window = tk.Toplevel(root)
+            congratulations_window.title("Congratulations!")
+
+            congratulations_label = tk.Label(congratulations_window,
+                                             text="You saved MJ! Click the 'Prize' button to claim your reward.",
+                                             font=("Helvetica", 14), fg="#FFFFFF", bg="black")
+            congratulations_label.pack(pady=20)
+
+            prize_button = tk.Button(congratulations_window, text="Prize", command=open_first_try_gui)
+            prize_button.pack(pady=10)
+
+        root.after(3000, show_congratulations_window)
+
+
+
+    else:
+        tk.messagebox.showinfo("Wrong Hero", "Oops! Wrong hero.")
+
+
+root.mainloop()
